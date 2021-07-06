@@ -2,7 +2,11 @@
 title: "STAT 626 Project"
 author: "Group 9"
 date: "6/2021 - 8/2021"
-output: pdf_document
+output: 
+  pdf_document:
+    citation_package: natbib
+    keep_tex: true
+    latex_engine: pdflatex
 ---
 
 ```{r}
@@ -39,6 +43,29 @@ pairs(cbind(ERA = era, BattingAvg = ba, Hits = hits, Strikeouts = so, HomeRuns =
 ```{r}
 pairs(cbind(ERA = era, BattingAvg = ba, HomeRuns = hrs), lower.panel = panel.cor)
 ```
+a. $ERA_t = \beta_0 + \beta_1 t + w_t$  
+b. $ERA_t = \beta_0 + \beta_1 t + \beta_2 HR + w_t$  
+c. $ERA_t = \beta_0 + \beta_1 t + \beta_2 HR + \beta_3 HR^2 + w_t$  
+d. $ERA_t = \beta_0 + \beta_1 t + \beta_2 HR + \beta_3 HR^2 + \beta_4 BA + w_t$
+
+```{r}
+hrs_2 <- hrs^2
+trend <- time(era)
+fit_a <- lm(era ~ trend)
+fit_b <- lm(era ~ trend + hrs)
+fit_c <- lm(era ~ trend + hrs + hrs_2)
+fit_d <- lm(era ~ trend + hrs + hrs_2 + ba)
+```
+
+
+
+
+
+
+
+
+
+
 
 
 
