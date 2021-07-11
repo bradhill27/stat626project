@@ -43,6 +43,26 @@ fit_a <- lm(era ~ trend)
 fit_b <- lm(era ~ trend + hrs)
 fit_c <- lm(era ~ trend + hrs + hrs_2)
 fit_d <- lm(era ~ trend + hrs + hrs_2 + ba)
+fit_e <- lm(era ~ trend + hrs + ba)
+
+summary(fit_a)
+summary(fit_b)
+summary(fit_c)
+summary(fit_d)
+summary(fit_e)
+
+AIC(fit_a)
+AIC(fit_b)
+AIC(fit_c)
+AIC(fit_d)
+AIC(fit_e)
+
+BIC(fit_a)
+BIC(fit_b)
+BIC(fit_c)
+BIC(fit_d)
+BIC(fit_e)
+## fit_d (full model) is the best ##
 
 ## ACF and PACF of original ERA time series ##
 acf2(era)
@@ -58,6 +78,17 @@ fit <- lm(era ~ time(era))
 detera <- resid(fit)
 acf2(detera)
 tsplot(detera)
+
+sera <- sqrt(era)
+acf2(sera)
+tsplot(sera)
+
+library(MASS)
+bc <- boxcox(era ~ time(era))
+(lambda <- bc$x[which.max(bc$y)])
+bcera <- (era^lambda-1)/lambda
+acf2(bcera)
+tsplot(bcera)
 
 ## ACF and PACF of differenced ERA data ##
 ## Appears stationary ##
@@ -81,9 +112,16 @@ mafit
 
 ## Fit ARMA(1,1) model to differenced ERA data ##
 ## Lowest AIC/BIC ##
+## Phi and theta estimates significantly different from zero ##
 ## Residuals appear to be white noise ##
 armafit <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE)
 armafit
 
+## Including covariates ##
+armafit_reg <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,])
+armafit_reg
+
 ## Forecasting 5 years with ARMA(1,1) model ##
 sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, n.ahead=5)
+sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
+           newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
