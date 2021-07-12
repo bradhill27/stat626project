@@ -104,9 +104,17 @@ lag2.plot(dera, hrs, 12)
 arfit <- sarima(dera, p=1, q=0, d=0, no.constant = TRUE)
 arfit
 
+## AR(1) with intercept is not better
+arfit_int = sarima(dera, p=1, q=0, d=0)
+arfit_int
+
 ## Fit MA(1) model to differenced ERA data ##
 mafit <- sarima(dera, p=0, q=1, d=0, no.constant = TRUE)
 mafit
+
+## MA(1) with intercept is not better
+mafit_int = sarima(dera, p=0, q=1, d=0)
+mafit_int
 
 ## Fit ARMA(1,1) model to differenced ERA data ##
 ## Lowest AIC/BIC ##
@@ -114,6 +122,10 @@ mafit
 ## Residuals appear to be white noise ##
 armafit <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE)
 armafit
+
+## ARMA(1,1) with intercept has non-zero intercept, AIC lower, BIC higher
+armafit_int = sarima(dera, p=1, q=1, d=0)
+armafit_int
 
 ## Including covariates (don't think this is the right way to do it) ##
 ## armafit_reg <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,])
@@ -124,9 +136,18 @@ sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, n.ahead=5)
 ## sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
            ## newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
 
+## used d=1 in sarima.for so that forecasted values would be ERAs
+  sarima.for(era, p=1, q=1, d=1, no.constant = TRUE, n.ahead=5)
+
 ## Fit AR(1) model to detrended ERA data (using Model D) ##
 arfit <- sarima(detera, p=1, q=0, d=0, no.constant = TRUE)
 arfit
 
 ## Forecasting 20 years with AR(1) model for detrended data ##
 sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=20)
+
+## Forecasting 5 years with AR(1) model for detrended data ##
+detera.preds = sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=5)
+
+## convert foreceasted values to ERAs
+(era.preds = detera.preds$pred + mean(era) )
