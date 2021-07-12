@@ -73,16 +73,14 @@ lera <- log(era)
 acf2(lera)
 tsplot(lera)
 
-## ACF and PACF of detrended ERA data ##
-fit <- lm(era ~ time(era))
-detera <- resid(fit)
+## ACF and PACF of detrended ERA data using Model D from above ##
+## Looks pretty stationary except for first 25 years ##
+## PACF plot indicates an AR(1) model would be a good fit ##
+detera <- resid(fit_d)
 acf2(detera)
 tsplot(detera)
 
-sera <- sqrt(era)
-acf2(sera)
-tsplot(sera)
-
+## Trying a Box-Cox transformation ##
 library(MASS)
 bc <- boxcox(era ~ time(era))
 (lambda <- bc$x[which.max(bc$y)])
@@ -117,11 +115,18 @@ mafit
 armafit <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE)
 armafit
 
-## Including covariates ##
-armafit_reg <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,])
-armafit_reg
+## Including covariates (don't think this is the right way to do it) ##
+## armafit_reg <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,])
+## armafit_reg
 
-## Forecasting 5 years with ARMA(1,1) model ##
+## Forecasting 5 years with ARMA(1,1) model for differenced data ##
 sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, n.ahead=5)
-sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
-           newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
+## sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
+           ## newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
+
+## Fit AR(1) model to detrended ERA data (using Model D) ##
+arfit <- sarima(detera, p=1, q=0, d=0, no.constant = TRUE)
+arfit
+
+## Forecasting 20 years with AR(1) model for detrended data ##
+sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=20)
