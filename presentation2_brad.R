@@ -7,6 +7,11 @@ raw <- read.csv("mlb.csv")
 era <- ts(rev(raw$ERA), start = raw$Year[length(raw$Year)], end = raw$Year[1])
 tsplot(era, main = 'Earned Run Average Time Series', xlab = 'Year', ylab = 'ERA')
 
+
+  xt.kernal = ksmooth(raw$Year, raw$ERA, "normal", bandwidth = 5)
+  lines(xt.kernal, lwd = 2, col = "red")
+
+
 ## Batting Average ##
 ba <- ts(rev(raw$BA), start = raw$Year[length(raw$Year)], end = raw$Year[1])
 tsplot(ba, main = 'Batting Average Time Series', xlab = 'Year', ylab = 'BA')
