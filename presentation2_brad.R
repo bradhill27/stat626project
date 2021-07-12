@@ -105,7 +105,7 @@ arfit <- sarima(dera, p=1, q=0, d=0, no.constant = TRUE)
 arfit
 
 ## AR(1) with intercept is not better
-arfit_int = sarima(dera, p=1, q=0, d=0)
+arfit_int = sarima(era, p=1, q=0, d=1)
 arfit_int
 
 ## Fit MA(1) model to differenced ERA data ##
@@ -113,7 +113,7 @@ mafit <- sarima(dera, p=0, q=1, d=0, no.constant = TRUE)
 mafit
 
 ## MA(1) with intercept is not better
-mafit_int = sarima(dera, p=0, q=1, d=0)
+mafit_int = sarima(era, p=0, q=1, d=1)
 mafit_int
 
 ## Fit ARMA(1,1) model to differenced ERA data ##
@@ -124,7 +124,7 @@ armafit <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE)
 armafit
 
 ## ARMA(1,1) with intercept has non-zero intercept, AIC lower, BIC higher
-armafit_int = sarima(dera, p=1, q=1, d=0)
+armafit_int = sarima(era, p=1, q=1, d=1)
 armafit_int
 
 ## Including covariates (don't think this is the right way to do it) ##
@@ -136,7 +136,7 @@ sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, n.ahead=5)
 ## sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
            ## newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
 
-## used d=1 in sarima.for so that forecasted values would be ERAs
+## used era data and d=1 so that forecasted values would be ERAs
   sarima.for(era, p=1, q=1, d=1, no.constant = TRUE, n.ahead=5)
 
 ## Fit AR(1) model to detrended ERA data (using Model D) ##
