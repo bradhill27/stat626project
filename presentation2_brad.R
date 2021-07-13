@@ -2,15 +2,14 @@ library(astsa)
 
 ## Read in the data ##
 raw <- read.csv("mlb.csv")
+## Remove data before 1900 ###
+raw <- raw[1:122,]
 
 ## ERA ##
 era <- ts(rev(raw$ERA), start = raw$Year[length(raw$Year)], end = raw$Year[1])
 tsplot(era, main = 'Earned Run Average Time Series', xlab = 'Year', ylab = 'ERA')
-
-
-  xt.kernal = ksmooth(raw$Year, raw$ERA, "normal", bandwidth = 5)
-  lines(xt.kernal, lwd = 2, col = "red")
-
+xt.kernal = ksmooth(raw$Year, raw$ERA, "normal", bandwidth = 5)
+lines(xt.kernal, lwd = 2, col = "red")
 
 ## Batting Average ##
 ba <- ts(rev(raw$BA), start = raw$Year[length(raw$Year)], end = raw$Year[1])
@@ -22,11 +21,11 @@ tsplot(hits, main = 'Hits Time Series', xlab = 'Year', ylab = 'Hits')
 
 ## Home Runs ##
 hrs <- ts(rev(raw$HR), start = raw$Year[length(raw$Year)], end = raw$Year[1])
-tsplot(hrs, main = 'Home Runs Time Series', xlab = 'Year', ylab = 'HRs')
+tsplot(hrs, main = 'Home Runs Time Series', xlab = 'Year', ylab = 'HR')
 
 ## Strikeouts ##
 so <- ts(rev(raw$SO), start = raw$Year[length(raw$Year)], end = raw$Year[1])
-tsplot(so, main = 'Strikeouts Time Series', xlab = 'Year', ylab = 'SOs')
+tsplot(so, main = 'Strikeouts Time Series', xlab = 'Year', ylab = 'SO')
 
 ## Look for trends between covariates and response and check for multicollinearity ##
 panel.cor <- function(x, y, ...) {
@@ -35,6 +34,7 @@ panel.cor <- function(x, y, ...) {
   r <- round(cor(x, y), 2)
   text(0.5, 0.5, r, cex = 1.75)
 }
+## THIS PLOT AND NEXT STILL DON'T WORK FOR SOME REASON ##
 pairs(cbind(ERA = era, BattingAvg = ba, Hits = hits, Strikeouts = so, HomeRuns = hrs), lower.panel = panel.cor)
 
 ## Batting Average and Hits are highly correlated. Strikeouts and Home Runs are highly correlated ##
@@ -67,7 +67,7 @@ BIC(fit_b)
 BIC(fit_c)
 BIC(fit_d)
 BIC(fit_e)
-## fit_d (full model) is the best ##
+## fit_e is the best ##
 
 ## ACF and PACF of original ERA time series ##
 acf2(era)
@@ -78,12 +78,12 @@ lera <- log(era)
 acf2(lera)
 tsplot(lera)
 
-## ACF and PACF of detrended ERA data using Model D from above ##
-## Looks pretty stationary except for first 25 years ##
+## ACF and PACF of detrended ERA data using Model E from above ##
+## Stationarity questionable ##
 ## PACF plot indicates an AR(1) model would be a good fit ##
-detera <- resid(fit_d)
-acf2(detera)
-tsplot(detera)
+detera <- resid(fit_e)
+acf2(detera, main = "Detrended ERA")
+tsplot(detera, main = "Detrended ERA Time Series", ylab = "Detrended ERA")
 
 ## Trying a Box-Cox transformation ##
 library(MASS)
@@ -109,7 +109,7 @@ lag2.plot(dera, hrs, 12)
 arfit <- sarima(dera, p=1, q=0, d=0, no.constant = TRUE)
 arfit
 
-## AR(1) with intercept is not better
+## AR(1) with intercept is not better ##
 arfit_int = sarima(era, p=1, q=0, d=1)
 arfit_int
 
@@ -117,7 +117,7 @@ arfit_int
 mafit <- sarima(dera, p=0, q=1, d=0, no.constant = TRUE)
 mafit
 
-## MA(1) with intercept is not better
+## MA(1) with intercept is not better ##
 mafit_int = sarima(era, p=0, q=1, d=1)
 mafit_int
 
@@ -132,27 +132,21 @@ armafit
 armafit_int = sarima(era, p=1, q=1, d=1)
 armafit_int
 
-## Including covariates (don't think this is the right way to do it) ##
-## armafit_reg <- sarima(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,])
-## armafit_reg
-
 ## Forecasting 5 years with ARMA(1,1) model for differenced data ##
 sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, n.ahead=5)
-## sarima.for(dera, p=1, q=1, d=0, no.constant = TRUE, xreg = as.matrix(cbind(hrs, hrs_2, ba))[-1,], n.ahead = 5,
-           ## newxreg = as.matrix(cbind(rep(mean(hrs), 5), rep(mean(hrs_2), 5), rep(mean(ba), 5))))
 
-## used era data and d=1 so that forecasted values would be ERAs
-  sarima.for(era, p=1, q=1, d=1, no.constant = TRUE, n.ahead=5)
-
-## Fit AR(1) model to detrended ERA data (using Model D) ##
+## Fit AR(1) model to detrended ERA data (using Model E) ##
 arfit <- sarima(detera, p=1, q=0, d=0, no.constant = TRUE)
 arfit
 
 ## Forecasting 20 years with AR(1) model for detrended data ##
-sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=20)
+sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=20,
+           main = "Forecast for AR(1) model (Detrended data)")
 
 ## Forecasting 5 years with AR(1) model for detrended data ##
 detera.preds = sarima.for(detera, p=1, q=0, d=0, no.constant = TRUE, n.ahead=5)
 
-## convert foreceasted values to ERAs
-(era.preds = detera.preds$pred + mean(era) )
+## Predictions using overall 2021 values for HR and BA ##
+(era.preds <- detera.preds$pred + predict.lm(fit_e, newdata = data.frame(trend = 2022:2026, 
+                                                                         hrs = rep(mean(hrs[122]), 5), 
+                                                                         ba = rep(mean(ba[122]), 5))) )
