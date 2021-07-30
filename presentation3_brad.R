@@ -46,15 +46,12 @@ panel.cor <- function(x, y, ...) {
   r <- round(cor(x, y), 2)
   text(0.5, 0.5, r, cex = 1.75)
 }
-## THIS PLOT AND NEXT STILL DON'T WORK FOR SOME REASON ##
-pairs(cbind(ERA = era, BattingAvg = ba, Hits = hits, Strikeouts = so, 
-            HomeRuns = hrs, Period = period), lower.panel = panel.cor)
 
 ## Batting Average and Hits are highly correlated. Strikeouts and Home Runs are highly correlated ##
-## Keep only ERA, Batting Average, and Home Runs ##
+## Keep only ERA, Batting Average, Home Runs, and Period ##
 pairs(cbind(ERA = era, BattingAvg = ba, HomeRuns = hrs, Period = period), lower.panel = panel.cor)
 
-## Fitting nested models, include squared HR term because of curved trend between HR and ERA ##
+## Fitting models ##
 hrs_2 <- hrs^2
 trend <- time(era)
 fit_e <- lm(era ~ trend + hrs + ba)
@@ -68,9 +65,9 @@ AIC(fit_f)
 
 BIC(fit_e)
 BIC(fit_f)
-# fit_f beats out fit_e
+# fit_f (including period) beats out fit_e ##
 
-## ACF and PACF of detrended ERA data using Model E from above ##
+## ACF and PACF of detrended ERA data using Model F from above ##
 ## Stationarity questionable ##
 ## PACF plot indicates an AR(1) model would be a good fit ##
 detera <- resid(fit_f)
@@ -83,13 +80,36 @@ arfit
 
 ## Investigate residuals and residuals^2 (r2) ##
 r <- resid(arfit$fit)
-acf2(r)
-tsplot(r)
+acf2(r, main = "AR(1) Residuals")
+tsplot(r, main = "AR(1) Residuals Time Series")
 r2 <- r^2
-acf2(r2)
+acf2(r2, main = expression("AR(1)" ~ Residuals^2))
 ## PACF of r2 cuts off after lag-1 and ACF seems to tail off, indicating an ARCH model ##
 
-## Fitting an AR-ARCH model on the detrended data ##
+## Fitting an AR(1)-ARCH(1) model on the detrended data ##
 library(fGarch)
 ararchfit <- garchFit(~arma(1,0) + garch(1,0), data = detera)
 summary(ararchfit)
+
+## Fitting an AR(1)-ARCH(2) model on the detrended data ##
+ararch2fit <- garchFit(~arma(1,0) + garch(2,0), data = detera)
+summary(ararch2fit)
+## Based on Information Criteria, AR(1)-ARCH(2) fit is better, but alpha_2 is not significant at .05 level ##
+## Continue with AR(1)-ARCH(1) model for model simplicity ##
+
+preds <- predict(ararchfit, plot = TRUE)
+y_t <- predict.lm(fit_f, newdata = data.frame(trend = 2022:2031, hrs = rep(hrs[151], 10), 
+                                       ba = rep(ba[151], 10), period = as.factor(rep("Post-Steroid", 10))))
+
+prediction <- preds$meanForecast + y_t
+lower_bound <- preds$lowerInterval + y_t
+upper_bound <- preds$upperInterval + y_t
+
+tsplot(era, col = "gray22", type = "b", main = 'Prediction and 95% Interval for Earned Run Average', ylab = "ERA",
+       xlim = c(1871, 2031))
+lines(x = 2022:2031, y = prediction, col = "red", type = "b")
+lines(x = 2022:2031, y = upper_bound, type = "l", lwd = 2)
+lines(x = 2022:2031, y = lower_bound, type = "l", lwd = 2)
+legend(1983, 2.75, legend=c("Observed Data", "Prediction", "95% Confidence Bound"), 
+       col = c("gray22", "red", "black"), pch = c(1, 1, NA), lty = c(NA, NA, 1), lwd = c(1, 1, 2))
+
